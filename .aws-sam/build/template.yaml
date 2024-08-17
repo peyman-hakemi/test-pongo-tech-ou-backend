@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'game-session-api
+
+  Sample SAM Template for game-session-api
+
+  '
+Globals:
+  Function:
+    Timeout: 10
+    LoggingConfig:
+      LogFormat: JSON
+    Tracing: Active
+Resources:
+  GameSessionTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: GameSessions
+      AttributeDefinitions:
+      - AttributeName: sessionId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: sessionId
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+  CreateGameSessionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: CreateGameSessionFunction
+      Handler: createGameSession.lambdaHandler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      Events:
+        CreateGameSession:
+          Type: Api
+          Properties:
+            Path: /sessions
+            Method: post
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: GameSessionTable
+          LOCAL_DYNAMODB_ENDPOINT: http://localhost:8000
+    Metadata:
+      SamResourceId: CreateGameSessionFunction
+  ListGameSessionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ListGameSessionsFunction
+      Handler: listGameSessions.lambdaHandler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      Events:
+        ListGameSessions:
+          Type: Api
+          Properties:
+            Path: /sessions
+            Method: get
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: GameSessionTable
+    Metadata:
+      SamResourceId: ListGameSessionsFunction
+Outputs:
+  CreateGameSessionApi:
+    Description: API Gateway endpoint URL for creating a game session
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/sessions/
+  ListGameSessionsApi:
+    Description: API Gateway endpoint URL for listing game sessions
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/sessions/
+  CreateGameSessionFunctionArn:
+    Description: Create Game Session Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - CreateGameSessionFunction
+      - Arn
+  ListGameSessionsFunctionArn:
+    Description: List Game Sessions Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - ListGameSessionsFunction
+      - Arn
+  GameSessionTableName:
+    Description: DynamoDB Table Name for storing game sessions
+    Value:
+      Ref: GameSessionTable
